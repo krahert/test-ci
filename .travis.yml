@@ -1,0 +1,56 @@
+# Specific ce limbaj de programare folosesc in proiect.
+language: node_js
+
+# Versiunea la Node. Atentie e un Array.
+node_js:
+  - "8"
+
+# distribution - adica base image-ul pentru OS-ul pe care sa-l incarce in VM.
+# 'Trusty' este o distributie compacta de Linux folosita pentru VMs mici care
+# , au de facut un singur task simplu. 
+dist: trusty
+
+# 'services' se refera la databases, servers si alte software-uri de care am
+# , nevoie ca sa pot rula serverul cum trebuie.
+services:
+  - mongodb
+  - redis-server
+
+# 'env' este un array care va contine enviorment variables, pe care le vrem
+# , setate de fiecare data cand aplicatia este bootata pe CI Server.
+# O sa imi setez si NODE_ENV sa fie 'ci' si o sa isi aiba propriile keys.
+# NODE_ENV=ci este defapt un string, nu o sa atribuie nicio valoare. O sa stie
+# , sa seteze si valoarea lui PORT. Daca puneam PORT ca element separat la array
+# , atunci aveam doua instante incomplete, care pornesc simultan.
+env:
+  - NODE_ENV=ci PORT=3000
+
+# Deoarece nu vom face commit in repository la 'node_modules', va trebui sa ii
+# , spun lui Travis sa instaleze dependintele. Deoarece dureaza foarte mult sa
+# , faca acest lucru, ii putem spune lui Travis sa salveze acel director. Sa il
+# , bage in cache pentru viitoarele build-uri.
+# Daca sunt updatate resursele folosite, nu o sa am probleme deoarece Travis
+# , doar o sa copieze 'node_modules' in proiect si atunci cand execut
+# , "$ npm install", o sa imi faca overwrite la ce trebuie updatat.
+cache:
+  directories:
+    - node_modules
+    - client/node_modules
+
+# Va reprezenta o serie de comenzi pe care vreau sa le execute in CLI pentru a
+# , pregati proiectul. Voi rula '$ npm run build' ca sa fac build-ul aplicatiei
+# , de React. La fel ca in Production enviorment. Este practic un 'postbuild'.
+install:
+  - npm install
+  - npm run build
+
+# 'script' este foarte similar cu 'install', adica o sa aiba un numar de comenzi
+# , pe care le voi executa in command line. Aici este locul unde vom porni
+# , serverul si unde vom face testele.
+script:
+  # 'nohup' o sa ii spuna procesului din background sa continue atunci cand a
+  # , fost inchis shell-ul de unde a post pornit.
+  - nohup npm run start &
+  # Ii spun la OS sa astepte 3 secunde ca sa aiba timp serverul sa porneasca.
+  - sleep 3
+  - npm run test
